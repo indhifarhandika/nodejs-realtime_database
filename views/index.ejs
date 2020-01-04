@@ -1,0 +1,91 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Realtime Database</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://js.pusher.com/5.0/pusher.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <h2>Realtime Database</h2>
+                <h4><%= judul %></h4>
+                <div class="table-responsive">
+                    <table id="mytable" class="table table-bordred table-striped">
+                        <thead>
+                            <!-- <th>No</th> -->
+                            <th>ID</th>
+                            <th>Sender ID</th>
+                            <th>Text Decoded</th>
+                            <th>Destination Number</th>
+                        </thead>
+                        <tbody id="tableBody">
+                            <% table.forEach(function(row, id) { %>
+                            <tr>
+                                <!-- <td>
+                                    <%= id+1 %>
+                                </!-->
+                                <td>
+                                    <%= row.ID %>
+                                </td>
+                                <td>
+                                    <%= row.SenderID %>
+                                </td>
+                                <td>
+                                    <%= row.TextDecoded %>
+                                </td>
+                                <td>
+                                    <%= row.DestinationNumber %>
+                                </td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var senderID = <%- JSON.stringify(table) %>;
+        console.log(senderID);
+        Pusher.logToConsole = true;
+        var pusher = new Pusher('9ca2d50a9c99d0e32cd1', {
+            cluster: 'ap1',
+            encrypted: true
+        });
+        var channel = pusher.subscribe('watch_outbox');
+        var channelDel = pusher.subscribe('del_outbox');
+        channel.bind('new_record', data => {
+            console.log("DATA >>>> ", data)
+            var table = document.getElementById('tableBody');
+            var row = table.insertRow(-1);
+            var ID = row.insertCell(0);
+            var SenderID = row.insertCell(1);
+            var Text = row.insertCell(2);
+            var DestinationNumber = row.insertCell(3);
+            senderID.push(data);
+            ID.innerHTML = data.ID;
+            SenderID.innerHTML = data.SenderID;
+            Text.innerHTML = data.TextDecoded;
+            DestinationNumber.innerHTML = data.DestinationNumber;
+        });
+        channelDel.bind('remove_record', data => {
+            console.log("DATA HAPUS >>>> ", data)
+            var table = document.getElementById('tableBody');
+            var index = senderID.findIndex(x => x.ID === data.ID);
+            console.log(index);
+            table.deleteRow(index);
+            senderID.splice(data, 1);
+        });
+    </script>
+</body>
+
+</html>
